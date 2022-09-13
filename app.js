@@ -35,6 +35,55 @@ function niceBytes(x){
     return(n.toFixed(n < 10 && l > 0 ? 1 : 0) + ' ' + units[l]);
 }
 
+function folderList(folderArr, index) {
+    let html = '';
+    if ( folderArr.length > 0 ) {
+        folderArr.forEach(folder => {
+            html += `<input type="checkbox" name="pathName-${index}" value="${folder}" checked>${folder} <br>`;
+        });
+    }
+
+    return html;
+}
+
+
+function getMetaData( imgData ) {
+    var has_custom_id;
+    var metaCredit;
+    let aaa = loadImage( imgData, { meta: true })
+
+
+    return aaa;
+
+
+
+    console.log( metaCredit );
+
+
+
+    // function (img, data) {
+    //     if ( data.exif ) {
+    //         let exifArr = data.exif.getAll();
+    //         for (const [key, value] of Object.entries(exifArr)) {
+    //             if ( key == 'Exif' || key == 'Thumbnail') continue;
+
+
+    //             let metaCredit = decode_utf8(value);
+
+    //             if ( key == 'Credit' ) {
+    //                 has_custom_id = true;
+
+    //                 return data;
+    //             }
+
+
+    //         }
+    //     }
+
+    // },
+
+}
+
 var storedFiles = [];
 var fileupload = $('#fileupload').fileupload({
     url: './upload.php',
@@ -63,24 +112,12 @@ var fileupload = $('#fileupload').fileupload({
             } else {
                 folderArr = [];
             }
-            folderList(folderArr);
-
-
-            function folderList(folderArr) {
-                let html = '';
-                if ( folderArr.length > 0 ) {
-                    folderArr.forEach(folder => {
-                        html += `<input type="checkbox" name="pathName-${index}" value="${folder}" checked>${folder} <br>`;
-                    });
-                }
-
-                return html;
-            }
             let tr = `<tr data-id="${index}">
                             <td class="tg-0lax"> <img data-id="${index}" class="file-preview" src="" alt="Превью" /></td>
                             <td class="tg-0lax"> ${file.name}</td>
+                            <td class="tg-0lax" id="customID"></td>
                             <td class="tg-0lax"> ${formatFileSize(file.size)}</td>
-                            <td class="tg-0lax"> ${folderList(folderArr)} </td>
+                            <td class="tg-0lax"> ${folderList(folderArr,index)} </td>
                             <td class="tg-0lax"> <div class="upload-file-progress"> <span data-id="${index}" class="uploadFileProgress"></span> </div></td>
                             <td class="tg-0lax action-image">
                                 <div class="action-image__inner">
@@ -95,14 +132,71 @@ var fileupload = $('#fileupload').fileupload({
             let reader = new FileReader();
             reader.onload = function(e) {
                 $(`img[data-id="${index}"]`).attr('src', e.target.result);
+
+                let metaCreditData = getMetaData( e.target.result, index )
+
+
+                metaCreditData.then(function (data) {
+                    if ( data.iptc ) {
+                        let iptcArr = data.iptc.getAll();
+
+                        console.log( iptcArr.hasOwnProperty('Credit') );
+
+
+                        if ( !iptcArr.hasOwnProperty('Credit') ) {
+                            $(`img.file-preview[data-id="${index}"]`).after('! НЕТ ID');
+                        } else {
+                            $(`tr[data-id="${index}"] td#customID`).html( decode_utf8(iptcArr.Credit) );
+                        }
+
+
+                        // for (const [key, value] of Object.entries(iptcArr)) {
+                        //     if ( key == 'Exif' || key == 'Thumbnail') continue;
+
+
+                        //     if ( key == 'Credit' ) {
+                        //         console.log( $(`tr[data-id="${index}"]`) );
+
+                        //     } else {
+
+                        //     }
+
+
+                        // }
+                    }
+
+
+                    // if ( !data.iptc ) {
+                    //     $(`img.file-preview[data-id="${index}"]`).after('! НЕТ iptc');
+                    // }
+                    // if ( !data.exif ) {
+                    //     $(`img.file-preview[data-id="${index}"]`).after('!  НЕТ exif');
+                    // }
+
+                    // if ( data.exif ) {
+                    //     let exifArr = data.exif.getAll();
+                    //     for (const [key, value] of Object.entries(exifArr)) {
+                    //         if ( key == 'Exif' || key == 'Thumbnail') continue;
+
+
+                    //         console.log( index, key, value );
+
+                    //         // metaCredit = decode_utf8(value);
+                    //         if ( key == 'Credit' ) {
+                    //             console.log( $(`tr[data-id="${index}"]`) );
+                    //             $(`tr[data-id="${index}"]`).css('backgrond', 'red');
+
+                    //         }
+
+
+                    //     }
+                    // }
+                });
+
             };
             reader.readAsDataURL(file);
             file.file_id = index;
             file.folders = folderArr;
-
-
-
-
 
 
 
@@ -228,67 +322,79 @@ function modalMetaData( numImage, data ) {
     modal.setAttribute('data-id', numImage);
 
 
-    let iptcArr = data.iptc.getAll();
 
-    let iptcHtml = `<table id="metaListTable" data-meta="iptc"><tbody>`;
 
-    for (const [key, value] of Object.entries(iptcArr)) {
+    var has_custom_id = false;
 
+    let iptcHtml = '';
+    if ( data.iptc ) {
+        let iptcArr = data.iptc.getAll();
+        for (const [key, value] of Object.entries(iptcArr)) {
+            iptcHtml += `<tr>
+                            <td>${key}</td>
+                            <td>${decode_utf8(value)}</td>
+                        </tr>`;
+        }
+    } else {
         iptcHtml += `<tr>
-                        <td>${key}</td>
-                        <td>${decode_utf8(value)}</td>
+                        <td>Не известно </td>
+                        <td>Не известно </td>
                     </tr>`;
-
-        // console.log(`${key}: ${ decode_utf8(value) }`);
     }
-    iptcHtml += `</tbody></table>`;
+
+    let exifHtml = '';
+    if ( data.exif ) {
+        let exifArr = data.exif.getAll();
+        for (const [key, value] of Object.entries(exifArr)) {
+            if ( key == 'Exif' || key == 'Thumbnail') continue;
 
 
-    let exifArr = data.exif.getAll();
+            if ( key == 'Credit' ) {
+                has_custom_id = true;
+            }
 
-
-    let exifHtml = `<table id="metaListTable" data-meta="exif"><tbody>`;
-
-    for (const [key, value] of Object.entries(exifArr)) {
-
+            exifHtml += `<tr>
+                            <td>${key}</td>
+                            <td>${decode_utf8(value)}</td>
+                        </tr>`;
+        }
+    } else {
         exifHtml += `<tr>
-                        <td>${key}</td>
-                        <td>${decode_utf8(value)}</td>
+                        <td>Не известно </td>
+                        <td>Не известно </td>
                     </tr>`;
-
-        // console.log(`${key}: ${ decode_utf8(value) }`);
     }
-    exifHtml += `</tbody></table>`;
 
+    let inner = `<div class="meta-modal__info modal-info">
+                        <table id="metaListTable" data-meta="exif">
+                            <tbody>
+                                <tr>
+                                    <th colspan="2">Exif</th>
+                                </tr>
+                                ${exifHtml}
+                            </tbody>
+                        </table>
+                        <table id="metaListTable" data-meta="iptc">
+                            <tbody>
+                                <tr>
+                                    <th colspan="2">Iptc</th>
+                                </tr>
+                                ${iptcHtml}
+                            </tbody>
+                        </table>
 
-
-    let inner = `
-    <div class="meta-modal__info modal-info">
-
-            <table id="metaListTable" data-meta="exif">
-                <tbody>
-                    <tr>
-                        <th colspan="2">Exif</th>
-                    </tr>
-                    ${exifHtml}
-                </tbody>
-            </table>
-            <table id="metaListTable" data-meta="iptc">
-                <tbody>
-                    <tr>
-                        <th colspan="2">Iptc</th>
-                    </tr>
-                    ${iptcHtml}
-                </tbody>
-            </table>
-
-        <div class="meta-modal__close">✕</div>
-    </div>
-    `
+                    <div class="meta-modal__close">✕</div>
+                </div>`;
 
     modal.innerHTML = inner;
 
     $('.content').prepend( modal );
+
+
+
+    if ( has_custom_id == false ) {
+        $(`tr[data-id="${numImage}"]`).css({'backgrond': 'red'});
+    }
 
 }
 
