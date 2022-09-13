@@ -203,7 +203,6 @@ $(document).on('click', '.meta-image', function() {
     loadImage(
         $(file).attr('src'),
         function (img, data) {
-            console.log( data );
 
 
             modalMetaData( numImage, data );
@@ -215,18 +214,51 @@ $(document).on('click', '.meta-image', function() {
         { meta: true }
     );
 
-
-
-    console.log( file );
-    console.log( numImage );
 })
 
+
+function decode_utf8(s) {
+    return decodeURIComponent(escape(s));
+  }
 
 function modalMetaData( numImage, data ) {
 
     let modal = document.createElement('div');
     modal.classList.add('meta-modal');
     modal.setAttribute('data-id', numImage);
+
+
+    let iptcArr = data.iptc.getAll();
+
+    let iptcHtml = `<table id="metaListTable" data-meta="iptc"><tbody>`;
+
+    for (const [key, value] of Object.entries(iptcArr)) {
+
+        iptcHtml += `<tr>
+                        <td>${key}</td>
+                        <td>${decode_utf8(value)}</td>
+                    </tr>`;
+
+        // console.log(`${key}: ${ decode_utf8(value) }`);
+    }
+    iptcHtml += `</tbody></table>`;
+
+
+    let exifArr = data.exif.getAll();
+
+
+    let exifHtml = `<table id="metaListTable" data-meta="exif"><tbody>`;
+
+    for (const [key, value] of Object.entries(exifArr)) {
+
+        exifHtml += `<tr>
+                        <td>${key}</td>
+                        <td>${decode_utf8(value)}</td>
+                    </tr>`;
+
+        // console.log(`${key}: ${ decode_utf8(value) }`);
+    }
+    exifHtml += `</tbody></table>`;
 
 
 
@@ -238,43 +270,17 @@ function modalMetaData( numImage, data ) {
                     <tr>
                         <th colspan="2">Exif</th>
                     </tr>
-                    <tr>
-                        <td>ExifVersion</td>
-                        <td>0231</td>
-                    </tr>
-                    <tr>
-                        <td>OffsetTime</td>
-                        <td>+03:00</td>
-                    </tr>
-                    <tr>
-                        <td>ColorSpace</td>
-                        <td>1</td>
-                    </tr>
+                    ${exifHtml}
                 </tbody>
             </table>
             <table id="metaListTable" data-meta="iptc">
                 <tbody>
                     <tr>
-                        <th colspan="2">Exif</th>
+                        <th colspan="2">Iptc</th>
                     </tr>
-                    <tr>
-                        <td>ExifVersion</td>
-                        <td>0231</td>
-                    </tr>
-                    <tr>
-                        <td>OffsetTime</td>
-                        <td>+03:00</td>
-                    </tr>
-                    <tr>
-                        <td>ColorSpace</td>
-                        <td>1</td>
-                    </tr>
+                    ${iptcHtml}
                 </tbody>
             </table>
-
-            <ul class="meta-list iptc-list">
-            </ul>
-
 
         <div class="meta-modal__close">✕</div>
     </div>
